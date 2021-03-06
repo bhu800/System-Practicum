@@ -1,0 +1,4 @@
+1.) color and graphics - columns, more
+2.) autocomplete
+3.) arrow - history - char matching 
+4.) arrange code in modules
