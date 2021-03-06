@@ -9,3 +9,6 @@
 
 # Ignore files with extensions '.out'
 *.out
+
+# Ignore .myshell_history file automatically made by myshell
+.myshell_history

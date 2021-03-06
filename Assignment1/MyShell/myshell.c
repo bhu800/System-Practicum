@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <libgen.h>
+#include <dirent.h>
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <linux/limits.h>
@@ -10,10 +11,20 @@
 #define MAX_BUFFER 1024        // maximum line buffer
 #define MAX_ARGS 64            // maximum number of arguments
 
+// colors for using in output
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+#define ANSI_COLOR_CYAN    "\x1b[36m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+#define COLOR_RESET  "\033[0m"
+
 char curr_path[MAX_BUFFER];         // current path
 char shell_path[MAX_BUFFER];        // shell path
 
-extern char **environ;
+extern char **environ;             // environment variables
 
 /* Convenience macro to silence compiler warnings about unused function parameters. */
 #define unused __attribute__((unused))
@@ -52,10 +63,10 @@ void tokanize(char* line, char** argv)
     } */
 }
 
-void error_exit(char* error_msg)
+int error_return(char* error_msg)
 {
-    fprintf(stderr, "myshell: %s\n", error_msg);
-    exit(1);
+    fprintf(stderr, "MYSHELL: %s\n", error_msg);
+    return 1;
 }
 
 /* take shell command input from user */
@@ -63,8 +74,68 @@ void readLine(char* line)
 {
     if (fgets(line, MAX_BUFFER+1, stdin) == NULL)
     {
-        error_exit("command input: Too long input, out of buffer range.");
+        error_return("command input: Too long input, out of buffer range.");
+        return;
     }
+}
+
+int checkIfDirExists(char* dirPath)
+{
+    DIR *dir = opendir(dirPath);
+    if (dir)
+    {
+        closedir(dir);
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+void dirtree(char *basePath, const int root)
+{
+    int i;
+    char path[1000];
+    struct dirent *dp;
+    DIR *dir = opendir(basePath);
+
+    if (!dir)
+    {
+        // perror("SHELL: dir: ");
+        return;
+    }
+
+    while ((dp = readdir(dir)) != NULL)
+    {
+        if (strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0)
+        {
+            for (i=0; i<root; i++) 
+            {
+                if (i%2 == 0)
+                    printf("%c", '|');
+                else
+                    printf(" ");
+
+            }
+
+            if (dp->d_type != DT_DIR)
+            {
+                printf("|-- " ANSI_COLOR_BLUE "%s \n" ANSI_COLOR_RESET, dp->d_name);
+            }
+            else
+            {
+                printf("|-- " ANSI_COLOR_GREEN "%s\n" ANSI_COLOR_RESET, dp->d_name);
+            }
+
+            strcpy(path, basePath);
+            strcat(path, "/");
+            strcat(path, dp->d_name);
+            dirtree(path, root + 2);
+        }
+    }
+    // printf("***hello***\n");
+    closedir(dir);
 }
 
 /* Built-in shell functions */
@@ -76,6 +147,7 @@ int cmd_pause(char** argv);
 int cmd_history(char** argv);
 int cmd_cd(char** argv);
 int cmd_environ(char** argv);
+int cmd_dir(char** argv);
 
 /* Built-in command functions take token array and return int */
 typedef int cmd_fun_t(char** argv);
@@ -102,6 +174,7 @@ If the <directory> argument is not present, report the current directory. \
 If the directory doesn’t exist an appropriate error will  be reported. \
 This command will change the PWD environment variable for current shell.\n"},
     {cmd_environ, "environ", "List all the environment strings of the current shell and the bash shell\n"},
+    {cmd_dir, "dir", "dir <directory> - Lists all the contents of the directory <directory>\n"}
 };
 
 /* Prints a helpful description for the given command */
@@ -109,7 +182,7 @@ int cmd_help(unused char** argv)
 {
   for (unsigned int i = 0; i < sizeof(cmd_table) / sizeof(fun_desc_t); i++)
     printf("%s - %s\n", cmd_table[i].cmd, cmd_table[i].doc);
-  return 1;
+  return 0;
 }
 
 /* Exits this shell */
@@ -122,7 +195,7 @@ int cmd_exit(unused char** argv)
 int cmd_clear(unused char** argv)
 {
     printf("\e[1;1H\e[2J\n");
-    return 1;
+    return 0;
 }
 
 /* Echo the comment */
@@ -141,7 +214,7 @@ int cmd_echo(unused char** argv)
 int cmd_pause(unused char** argv)
 {
     getpass("Press ENTER to continue...");
-    return 1;
+    return 0;
 }
 
 /* Display the list of previously executed commands, even on shell restart */
@@ -168,7 +241,7 @@ int cmd_history(unused char** argv)
     if (line)
         free(line);
     
-    return 1;
+    return 0;
 }
 
 /* Change directory */
@@ -178,7 +251,7 @@ int cmd_cd(unused char** argv)
     if (argv[1] == NULL)
     {
         printf("%s\n", getenv("PWD"));
-        return 1;
+        return 0;
     }
     // if 1 argument is given - try to change to that directory
     else if (argv[2] == NULL)
@@ -187,7 +260,7 @@ int cmd_cd(unused char** argv)
         if (chdir(argv[1]) == -1)
         {
             perror("myshell: cd ");
-            exit(1);
+            return 1;
         }
         // if change is successful, change environment variable PWD to changed directory path
         else
@@ -195,13 +268,14 @@ int cmd_cd(unused char** argv)
             char buff[MAX_BUFFER];
             getcwd(buff, MAX_BUFFER);
             setenv("PWD", buff, 1);
-            return 1;
+            return 0;
         }
     }
     // if more than 1 arguments return error
     else
     {
-        error_exit("cd: Too many arguments.");
+        error_return("cd: Too many arguments.");
+        return 1;
     }
 }
 
@@ -213,6 +287,34 @@ int cmd_environ(unused char** argv)
     {
         printf("%s\n\n", *env);
         env++;
+    }
+}
+
+/* List all the contents of the directory */
+int cmd_dir(unused char** argv)
+{
+    if (argv[1] == NULL)
+    {
+        error_return("dir: directory name not provided");
+        return 1;
+    }
+    else if (argv[2] != NULL)
+    {
+        error_return("dir: too many arguments");
+        return 1;
+    }
+    else
+    {
+        if (checkIfDirExists(argv[1]))
+        {
+            dirtree(argv[1], 0);
+            return 0;
+        }
+        else
+        {
+            perror("MYSHELL: dir: ");
+            return 1;
+        }
     }
 }
 
@@ -237,25 +339,29 @@ int lookup(char cmd[]) {
   return -1;
 }
 
-void execute(char** argv)
+int execute(char** argv)
 {
     pid_t pid;
     int status;
 
     // if command is empty
-    if (argv[0] == NULL) return;
+    if (argv[0] == NULL) return 0;
     
     // check if the command is a built-in command
     int cmd_idx = lookup(argv[0]);
-    // if it is a bi=uilt-in command execute it from cmd_table
-    if (cmd_idx >= 0) cmd_table[cmd_idx].fun(argv);
+    // if it is a built-in command execute it from cmd_table
+    if (cmd_idx >= 0) 
+    {
+        if(cmd_table[cmd_idx].fun(argv)) return 1;
+    }
     // else try to execute it using execvp
     else
     {
         // fork a child process
         if ((pid = fork()) < 0)
         {
-            error_exit("fork: forking child process failed.");
+            error_return("fork: forking child process failed.");
+            return 1;
         }
         // for child process - 
         else if (pid == 0)
@@ -263,7 +369,8 @@ void execute(char** argv)
             // execute the command
             if (execvp(argv[0], argv) < 0)
             {
-                error_exit("input command/file: No such built-in command or file or directory");
+                error_return("input command/file: No such built-in command or file or directory");
+                return 1;
             }
         }
         // for parent process - 
@@ -273,6 +380,8 @@ void execute(char** argv)
             while (wait(&status) != pid);
         }
     }
+
+    return 0;
 }
 
 /* Executes batch file line-by-line */
@@ -288,7 +397,9 @@ void execute_batchfile(char* filepath)
     while ((read = getline(&line, &len, fptr)) != -1) 
     {
         tokanize(line, argv);
-        execute(argv);
+        // if execute returns 1, then it means there was some eror executing that line in batch file
+        // immediately stop execution
+        if(execute(argv)) exit(1);
     }
 
     fclose(fptr);
@@ -323,11 +434,18 @@ void init_shell()
     printf("/***      Press \"help\" for user manual.\n");
 }
 
+// puts shell command prompt string on console
+void putShellPrompt()
+{
+    fprintf(stderr, ANSI_COLOR_RED "\n%s@%s" ANSI_COLOR_CYAN" %s" ANSI_COLOR_RESET " > ",getenv("USER"), getenv("NAME"), getenv("PWD"));
+}
+
 int main(int argc, char* argv[])
 {
     if (argc > 2)
     {
-        error_exit("Maximum 1 argument is allowed - batch file path.");
+        error_return("Maximum 1 argument is allowed - batch file path.");
+        return 1;
     }
     else if (argc == 2)
     {
@@ -343,7 +461,7 @@ int main(int argc, char* argv[])
 
         while (1)
         {    
-            fprintf(stderr,"\n%s@%s %s $: ",getenv("USER"), getenv("NAME"), getenv("PWD"));
+            putShellPrompt();
             readLine(line);
             save_history(line);
             tokanize(line, argv);
