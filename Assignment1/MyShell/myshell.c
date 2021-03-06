@@ -74,6 +74,11 @@ void readLine(char* line)
 {
     if (fgets(line, MAX_BUFFER+1, stdin) == NULL)
     {
+        if (feof(stdin))
+        {
+            printf(ANSI_COLOR_MAGENTA "Bye!\n" ANSI_COLOR_RESET);
+            exit(0);
+        }
         error_return("command input: Too long input, out of buffer range.");
         return;
     }
@@ -188,7 +193,8 @@ int cmd_help(unused char** argv)
 /* Exits this shell */
 int cmd_exit(unused char** argv) 
 {
-  exit(0);
+    printf(ANSI_COLOR_MAGENTA "Bye!\n" ANSI_COLOR_RESET);
+    exit(0);
 }
 
 /* Clear the console screen */
