@@ -13,6 +13,7 @@
 char curr_path[MAX_BUFFER];         // current path
 char shell_path[MAX_BUFFER];        // shell path
 
+extern char **environ;
 
 /* Convenience macro to silence compiler warnings about unused function parameters. */
 #define unused __attribute__((unused))
@@ -74,6 +75,7 @@ int cmd_echo(char** argv);
 int cmd_pause(char** argv);
 int cmd_history(char** argv);
 int cmd_cd(char** argv);
+int cmd_environ(char** argv);
 
 /* Built-in command functions take token array and return int */
 typedef int cmd_fun_t(char** argv);
@@ -99,6 +101,7 @@ Multiple spaces/tabs will be reduced to a single space.\n"},
 If the <directory> argument is not present, report the current directory. \
 If the directory doesn’t exist an appropriate error will  be reported. \
 This command will change the PWD environment variable for current shell.\n"},
+    {cmd_environ, "environ", "List all the environment strings of the current shell and the bash shell\n"},
 };
 
 /* Prints a helpful description for the given command */
@@ -202,6 +205,17 @@ int cmd_cd(unused char** argv)
     }
 }
 
+/* List all the environment strings of the current shell and the bash shell */
+int cmd_environ(unused char** argv)
+{
+    char** env = environ;
+    while (*env != NULL)
+    {
+        printf("%s\n\n", *env);
+        env++;
+    }
+}
+
 /* Saves the list of previously executed commands */
 void save_history(char* line)
 {
@@ -261,6 +275,7 @@ void execute(char** argv)
     }
 }
 
+/* Executes batch file line-by-line */
 void execute_batchfile(char* filepath)
 {
     FILE *fptr;
