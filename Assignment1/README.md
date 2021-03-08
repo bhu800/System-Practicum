@@ -1,8 +1,8 @@
 # Instructions
 - `make` (to generate executables)
-- `./prob1` (run problem-1)
-- `./prob2` (run problem-2)
-- `./prob3 size count` (run problem-3, size=input matrix size, count=number of threads to be used)
+- `./myshell` (run MyShell)
+- `./dinPhil` (run Dining Philosopher)
+- `./matMul size count` (run Matrix Multiplication, size=input matrix size, count=number of threads to be used)
 - `make clean` (to remove all executable files)
 
 # Language
