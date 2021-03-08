@@ -413,11 +413,36 @@ void execute_batchfile(char* filepath)
         free(line);
 }
 
-void init_shell()
+
+/* get application full path in path */
+char * app_path(char * path, const char * argv0)
+{
+    char buf[PATH_MAX];
+    char * pos;
+    if (argv0[0] == '/') 
+    {    // run with absolute path
+        strcpy(buf, argv0);
+    } else 
+    {    // run with relative path
+        if(NULL == getcwd(buf, PATH_MAX)) {
+            perror("getcwd error");
+            return NULL;
+        }
+        strcat(buf, "/");
+        strcat(buf, argv0);
+    }
+    if (NULL == realpath(buf, path)) 
+    {
+        perror("realpath error");
+        return NULL;
+    }
+    return path;
+}
+
+void init_shell(const char * argv0)
 {
     // set environment 
-    getcwd(shell_path, MAX_BUFFER);
-    strcat(shell_path, "/myshell");
+    app_path(shell_path, argv0);
     printf("shell_path: %s\n", shell_path);
     setenv("shell", shell_path, 1);
     // clear the console
@@ -459,11 +484,11 @@ int main(int argc, char* argv[])
     }
     else
     {
+        init_shell(argv[0]);
+
         char line[MAX_BUFFER+1];     // one extra for terminating null character
         argv = (char**) malloc(sizeof(char*)*(MAX_ARGS+1)); // one extra for terminating null character
         char* prompt;
-
-        init_shell();
 
         while (1)
         {    
