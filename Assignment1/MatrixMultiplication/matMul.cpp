@@ -15,13 +15,17 @@ vector <vector<long long> > a,b,ansSequential,ansParallel;
 //using vectors as an abstraction for dynamic allocation of memory
 
 void* parallel(void* arg){
+
+	//each slot is the set of z rows on which a particular thread is working
 	int slot=*((int*)arg);
 
 	for(int i=slot*z;i<slot*z+z;i++){
 		if(i>=n) break;
 
+		//dynamic resizing of the vector
 	 	ansParallel[i].resize(n);
 
+	 	//applying the naive algorithm for matrix-multiplication here
 		for(int j=0;j<n;j++){
 			for(int k=0;k<n;k++){
 				ansParallel[i][j]+=a[i][k]*b[k][j];
@@ -29,6 +33,7 @@ void* parallel(void* arg){
 		}
 	}
 
+	//returning dummy variable as return value is not required
 	void* dummy;
 	pthread_exit(dummy);
 }
@@ -38,6 +43,8 @@ void sequenctial(){
 	for(int i=0;i<n;i++){
 		ansSequential[i].resize(n);
 
+		//Naive O(n^3) matirix multiplication algorithm
+		//ans(i,j) is dot product of the ith row vector and jth column vector
 		for(int j=0;j<n;j++){
 			for(int k=0;k<n;k++){
 				ansSequential[i][j]+=a[i][k]*b[k][j];
@@ -55,7 +62,7 @@ int main(int argc,char* argv[]){
 		exit(-1);
 	}
 
-	
+	//stoi function converts the string to integer
 	n=stoi(argv[1]);
 	m=stoi(argv[2]);
 	
@@ -74,7 +81,10 @@ int main(int argc,char* argv[]){
 		}
 	}
 
+
 	//SEQUENTIAL
+
+	//using chrono c++ library to measure the time taken by a particular section of the program
 	auto startSequential = chrono::steady_clock::now();
 
 	sequenctial();
@@ -99,10 +109,12 @@ int main(int argc,char* argv[]){
 	for(int i=0;i<m;i++) posArr[i]=i;
 
 
+	//pthread_create(address of the thread, NULL, function to be run by the thread, address of the arguments in the thread function)
 	for(int i=0;i<m;i++){
 		pthread_create(&(threads[i]),NULL,parallel,&posArr[i]);
 	}
 
+	//joining the threads with the main program
 	void* status;
 	for(int i=0;i<m;i++){
 		pthread_join(threads[i],&status);
@@ -135,5 +147,9 @@ int main(int argc,char* argv[]){
 	// 	}
 	// }
 
-	cout<<totalSequential<<" ms  "<<totalParallel<<" ms"<<endl;
+
+	//printing the running time in the console as well
+	cout<<"Sequential algorithm: "<<totalSequential<<" ms\n";
+	cout<<"Parallel   algorithm: "<<totalParallel<<" ms\n";
+	
 }

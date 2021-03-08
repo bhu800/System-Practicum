@@ -12,3 +12,5 @@
 
 # Ignore .myshell_history file automatically made by myshell
 .myshell_history
+
+!Makefile
