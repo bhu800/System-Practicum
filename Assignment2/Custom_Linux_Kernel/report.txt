@@ -1,0 +1,10 @@
+
+Using INSTALL_MOD_STRIP along with make modules_install strips all debugging symbols and reduces the size of the modules to be installed and the size of the initrd image. Though size of kernel(vmlizuz) is not affected.
+
+Size of initrd.img-5.8.0-45-generic : 52.9 MB
+Size of initrd.img-5.10.1  : 50.5 MB
+
+Size of lib/modules/5.8.0-45-generic : 291.6 MB
+Size of lib/modules/5.10.1 : 284.6 MB
+
+
