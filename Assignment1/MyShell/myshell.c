@@ -65,7 +65,7 @@ void tokanize(char* line, char** argv)
 
 int error_return(char* error_msg)
 {
-    fprintf(stderr, "MYSHELL: %s\n", error_msg);
+    fprintf(stderr, ANSI_COLOR_RED "MYSHELL: %s" ANSI_COLOR_RESET "\n", error_msg);
     return 1;
 }
 
@@ -210,10 +210,10 @@ int cmd_echo(unused char** argv)
     int i=1;
     while (argv[i] != NULL)
     {
-        printf("%s ", argv[i]);
+        printf(ANSI_COLOR_MAGENTA "%s ", argv[i]);
         i++;
     }
-    printf("\n");
+    printf(ANSI_COLOR_RESET "\n");
 }
 
 /* Pause operations of the shell until ‘Enter’ is pressed */
@@ -265,7 +265,7 @@ int cmd_cd(unused char** argv)
         // if change fails, return corrosponding error
         if (chdir(argv[1]) == -1)
         {
-            perror("myshell: cd ");
+            perror(ANSI_COLOR_RED "myshell: cd ");
             return 1;
         }
         // if change is successful, change environment variable PWD to changed directory path
@@ -449,7 +449,7 @@ void init_shell(const char * argv0)
     // printf("\e[1;1H\e[2J");
 
     // show welcome message to the user
-    printf("\n/***\n\
+    printf("\n/***\n" ANSI_COLOR_YELLOW "\
     *            _____                _____ _          _ _ \n\
     *           |  __ \\              / ____| |        | | |\n\
     *       __ _| |__) |__ _ _   _  | (___ | |__   ___| | |\n\
@@ -458,17 +458,17 @@ void init_shell(const char * argv0)
     *      \\__, |_|  \\_\\__,_|\\__, | |_____/|_| |_|\\___|_|_|\n\
     *       __/ |             __/ |                        \n\
     *      |___/             |___/                         \n\
-    */\n");
+    */" ANSI_COLOR_RESET "\n");
 
     char* username = getenv("USER");
-    printf("/***      Welcome %s to our gRay Shell!\n", username);
-    printf("/***      Press \"help\" for user manual.\n");
+    printf("/***      Welcome " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RESET " to our gRay Shell!\n", username);
+    printf("/***      Press" ANSI_COLOR_MAGENTA " \"help\"" ANSI_COLOR_RESET " for user manual.\n");
 }
 
 // puts shell command prompt string on console
 void putShellPrompt()
 {
-    fprintf(stderr, ANSI_COLOR_RED "\n%s@%s" ANSI_COLOR_CYAN" %s" ANSI_COLOR_RESET " > ",getenv("USER"), getenv("NAME"), getenv("PWD"));
+    fprintf(stderr, ANSI_COLOR_YELLOW "\n%s@%s" ANSI_COLOR_CYAN" %s" ANSI_COLOR_RESET " > ",getenv("USER"), getenv("NAME"), getenv("PWD"));
 }
 
 int main(int argc, char* argv[])
