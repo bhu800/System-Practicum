@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.sqlite3": "sqlite",
+        "*.txt": "plaintext",
+        "pthread.h": "c"
+    }
+}
