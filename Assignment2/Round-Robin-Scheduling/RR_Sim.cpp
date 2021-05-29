@@ -3,6 +3,7 @@
 #include <fstream>
 #include <ctime>
 #include <algorithm>
+#include <iomanip>
 
 using namespace std;
 
@@ -17,12 +18,11 @@ using namespace std;
  * 		burst:			burst time of each process
  * 		time_quantum:	time quantum of Round-Robin algorithm
 */
-void simulateRoundRobinScheduler(int N, vector<int> arrival, vector<int> burst, int time_quantum, ofstream &myfile)
+void simulateRoundRobinScheduler(int N, vector<int> arrival, vector<int> burst, int time_quantum, int btw_tq_comp = false)
 {
-	myfile<<endl;
     int t = 0, idx = 0, cpu_idle = 0;
 	vector<int> completion(N), first_run(N), rem_burst(burst.begin(), burst.end());
-	cout<<"\nRound-Robin Schduling - "<<endl;
+	if (!btw_tq_comp) cout<<"\nRound-Robin Schduling - "<<endl;
 	while(1)
 	{
 		int flag1 = 1, flag2 = 1;
@@ -37,7 +37,7 @@ void simulateRoundRobinScheduler(int N, vector<int> arrival, vector<int> burst, 
 				{
 					flag2 = 0;
 					idx = (idx+i)%N;
-					cout<<idx<<" ";
+					if (!btw_tq_comp) cout<<idx<<" ";
 
 					if (rem_burst[idx] == burst[idx]) first_run[idx] = t;
 
@@ -60,7 +60,7 @@ void simulateRoundRobinScheduler(int N, vector<int> arrival, vector<int> burst, 
 
 		if (flag2 && !flag1) 
 		{
-			cout<<"<idle ("<<t<<")> ";
+			if (!btw_tq_comp) cout<<"<idle ("<<t<<")> ";
 			t++;
 			cpu_idle++;
 			idx = 0;
@@ -68,9 +68,9 @@ void simulateRoundRobinScheduler(int N, vector<int> arrival, vector<int> burst, 
 		else idx++;
 		if (flag1) break;
 	}
-	cout<<endl;
+	if (!btw_tq_comp) cout<<endl;
 	float ATT = 0, AWT = 0, ART = 0;
-	cout<<"\n===== Scheduling Metrices for each process =====\n";
+	if (!btw_tq_comp) cout<<"\n===== Scheduling Metrices for each process =====\n";
 	for (int i=0; i<N; i++)
 	{
 		int TT = completion[i] - arrival[i];
@@ -81,32 +81,35 @@ void simulateRoundRobinScheduler(int N, vector<int> arrival, vector<int> burst, 
 		AWT += WT;
 		ART += RT;
 
-		cout<<"Process "<<i+1<<" - \n";
-		cout<<"		Start time - "<<arrival[i]<<" \n";
-		cout<<"		Completion time - "<<completion[i]<<" \n";
-		cout<<"		Turnaround time - "<<TT<<" \n";
-		cout<<"		Waiting time - "<<WT<<" \n";
-		cout<<"		Response time - "<<RT<<" \n";
+		if (!btw_tq_comp) cout<<"Process "<<i+1<<" - \n";
+		if (!btw_tq_comp) cout<<"		Start time - "<<arrival[i]<<" \n";
+		if (!btw_tq_comp) cout<<"		Completion time - "<<completion[i]<<" \n";
+		if (!btw_tq_comp) cout<<"		Turnaround time - "<<TT<<" \n";
+		if (!btw_tq_comp) cout<<"		Waiting time - "<<WT<<" \n";
+		if (!btw_tq_comp) cout<<"		Response time - "<<RT<<" \n";
 	}
 	ATT /= N;
 	AWT /= N;
 	ART /= N;
 
-	cout<<"\n===== Average Scheduling Metrices =====\n";
-	cout<<"Average Turnaround time - "<<ATT<<" \n";
-	cout<<"Average Waiting time - "<<AWT<<" \n";
-	cout<<"Average Response time - "<<ART<<" \n";
-	cout<<endl;
-
-	myfile<<ATT<<"\t"<<AWT<<"\t"<<ART<<endl;
+	if (!btw_tq_comp) cout<<"\n===== Average Scheduling Metrices =====\n";
+	if (!btw_tq_comp) cout<<"Average Turnaround time - "<<ATT<<" \n";
+	if (!btw_tq_comp) cout<<"Average Waiting time - "<<AWT<<" \n";
+	if (!btw_tq_comp) cout<<"Average Response time - "<<ART<<" \n";
+	if (!btw_tq_comp) cout<<endl;
 
 	float t_end = *max_element(completion.begin(), completion.end());
 	float throughput = N/t_end;
 	float cpu_utilization = ((t_end - cpu_idle)/t_end)*100;
 
-	cout<<"Throughput - "<<throughput<<" \n";
-	cout<<"CPU Utilization - "<<cpu_utilization<<"%\n";
-	cout<<"\n===============================\n";
+	if (!btw_tq_comp) cout<<"Throughput - "<<throughput<<" \n";
+	if (!btw_tq_comp) cout<<"CPU Utilization - "<<cpu_utilization<<"%\n";
+	if (!btw_tq_comp) cout<<"\n===============================\n";
+	cout << std::fixed << std::setprecision(1);
+	if (btw_tq_comp)
+	{
+		cout<<time_quantum<<" \t "<<ATT<<" \t "<<AWT<<" \t "<<ART<<"\n";
+	}
 }
 
 vector<int> makeRandomArray(int n, int l, int h)
@@ -120,29 +123,39 @@ vector<int> makeRandomArray(int n, int l, int h)
 	return V;
 }
 
+void compareForMultipleTimeQuantums()
+{
+	int N, tq;
+	cout<<"Enter number of processes - ";
+	cin>>N;
+	cout<<"Enter number of time quantums - ";
+	cin>>tq;
+	vector<int> arr(N), burst(N), timeQ(tq);
+	cout<<"Enter arrival times - ";
+	for (int i=0; i<N; i++) cin>>arr[i];
+	cout<<"Enter burst time - ";
+	for (int i=0; i<N; i++) cin>>burst[i];
+	cout<<"Enter time quantums - ";
+	for (int i=0; i<tq; i++) cin>>timeQ[i];
+	cout<<"TQ \t ATT \t AWT \t ART\n";
+	for (int i=0; i<tq; i++) simulateRoundRobinScheduler(N, arr, burst, timeQ[i], true);
+}
+
 int main()
 {
-	int N = 10, tq = 1;
-    vector<int> arr(N, 0), burst = {100, 10, 10, 10}, tq_arr = {1, 10, 100};
-	
-	ofstream myfile;
-	myfile.open("out.txt", ios::app);
-	myfile<<"======= for Burst time =======\n";
-	for (int i=0; i<burst.size(); i++)
-	{
-		myfile<<burst[i]<<" ";
-	}
-	myfile<<endl;
-	myfile<<"-----------------------------\n";
-	myfile<<"ATT\tAWT\tART\n";
-	for (int i=0; i<tq_arr.size(); i++)
-	{
-		simulateRoundRobinScheduler(burst.size(), vector<int>(burst.size(), 0), burst, tq_arr[i], myfile);
-	}
-	myfile<<"=================================\n";
-	myfile.close();
+	// int N, tq;
+	// cout<<"Enter number of processes - ";
+	// cin>>N;
+	// cout<<"Enter time quantum - ";
+	// cin>>tq;
+	// vector<int> arr(N), burst(N);
+	// cout<<"Enter arrival times - ";
+	// for (int i=0; i<N; i++) cin>>arr[i];
+	// cout<<"Enter burst time - ";
+	// for (int i=0; i<N; i++) cin>>burst[i];
+	// simulateRoundRobinScheduler(N, arr, burst, tq);
 
-
+	compareForMultipleTimeQuantums();
 
     return 0;
 }
