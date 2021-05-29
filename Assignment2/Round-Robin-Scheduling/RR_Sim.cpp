@@ -17,8 +17,9 @@ using namespace std;
  * 		burst:			burst time of each process
  * 		time_quantum:	time quantum of Round-Robin algorithm
 */
-void simulateRoundRobinScheduler(int N, vector<int> arrival, vector<int> burst, int time_quantum)
+void simulateRoundRobinScheduler(int N, vector<int> arrival, vector<int> burst, int time_quantum, ofstream &myfile)
 {
+	myfile<<endl;
     int t = 0, idx = 0, cpu_idle = 0;
 	vector<int> completion(N), first_run(N), rem_burst(burst.begin(), burst.end());
 	cout<<"\nRound-Robin Schduling - "<<endl;
@@ -97,6 +98,8 @@ void simulateRoundRobinScheduler(int N, vector<int> arrival, vector<int> burst, 
 	cout<<"Average Response time - "<<ART<<" \n";
 	cout<<endl;
 
+	myfile<<ATT<<"\t"<<AWT<<"\t"<<ART<<endl;
+
 	float t_end = *max_element(completion.begin(), completion.end());
 	float throughput = N/t_end;
 	float cpu_utilization = ((t_end - cpu_idle)/t_end)*100;
@@ -119,8 +122,27 @@ vector<int> makeRandomArray(int n, int l, int h)
 
 int main()
 {
-    vector<int> arr = {0, 0, 0, 0, 0}, burst = {85, 30, 35, 20, 50};
-    simulateRoundRobinScheduler(arr.size(), arr, burst, 1);
+	int N = 10, tq = 1;
+    vector<int> arr(N, 0), burst = {100, 10, 10, 10}, tq_arr = {1, 10, 100};
+	
+	ofstream myfile;
+	myfile.open("out.txt", ios::app);
+	myfile<<"======= for Burst time =======\n";
+	for (int i=0; i<burst.size(); i++)
+	{
+		myfile<<burst[i]<<" ";
+	}
+	myfile<<endl;
+	myfile<<"-----------------------------\n";
+	myfile<<"ATT\tAWT\tART\n";
+	for (int i=0; i<tq_arr.size(); i++)
+	{
+		simulateRoundRobinScheduler(burst.size(), vector<int>(burst.size(), 0), burst, tq_arr[i], myfile);
+	}
+	myfile<<"=================================\n";
+	myfile.close();
+
+
 
     return 0;
 }

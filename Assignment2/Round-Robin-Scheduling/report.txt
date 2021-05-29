@@ -1,0 +1,21 @@
+N = 5
+
+159.2 115.2 2
+158.8 114.8 4
+156 112 10
+154 110 20
+154 110 40
+147 103 68
+171 127 100
+
+N = 10
+467.5 405.5 4.5
+464.9 402.9 9
+453.5 391.5 22.5
+440.5 378.5 45
+426.5 364.5 90
+397 335 156.5
+357 295 226.5
+
+
+// if all the process come at starting FIFO (i.e. RR with inifinite time quanta) is the most optimal policy in terms of performance
