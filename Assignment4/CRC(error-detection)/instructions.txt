@@ -1,0 +1,7 @@
+Terminal 1
+gcc server.c -o server
+./server
+
+Terminal 2
+gcc client.c -o client -lm
+./client
