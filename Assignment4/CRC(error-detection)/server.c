@@ -5,8 +5,8 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <stdbool.h>
-#define MAXREQ 100
-#define MAXQUEUE 5
+#define MAXREQ 200
+#define MAXQUEUE 3
 
 void getRemainder(char divisor[],char data[],int N,int dataLen,char remainder[]){
   char dividend[N+1];dividend[N]='\0';
@@ -26,8 +26,6 @@ void getRemainder(char divisor[],char data[],int N,int dataLen,char remainder[])
     for(int j=0;j<N;j++)
       remainder[j]=dividend[j];
   }
-  // printf("%s\n", dividend);
-  // printf("%s\n\n", remainder);
 
 
   for(int i=N;i<dataLen;i++){
@@ -49,10 +47,6 @@ void getRemainder(char divisor[],char data[],int N,int dataLen,char remainder[])
         remainder[j]=dividend[j];
     }
 
-
-
-    // printf("%s\n", dividend);
-    // printf("%s\n\n", remainder);
   }
 
   return ;
@@ -60,91 +54,98 @@ void getRemainder(char divisor[],char data[],int N,int dataLen,char remainder[])
 
 void server(int consockfd) {
 
-  // divisor
-  char divisor[]="11001";
-  int N=(int)(sizeof(divisor)/sizeof(divisor[0])) - 1;
+	// divisor
+	char divisor[]="11001";
+	int N=(int)(sizeof(divisor)/sizeof(divisor[0])) - 1;
 
-  char reqbuf[MAXREQ];
-  int n;
-  while (1) {                   
-    memset(reqbuf,0, MAXREQ);
-    n = read(consockfd,reqbuf,MAXREQ-1); /* Recv */
-    // printf("Received message: %s\n", reqbuf);
-    if (n <= 0) return;
+	int chunkLength=8;
 
-    int dataLen=strlen(reqbuf);
-    char* data=(char*)(malloc(sizeof(char)*(dataLen+1)));
-    for(int i=0;i<dataLen;i++)
-      data[i]=reqbuf[i];
+	char reqbuf[MAXREQ];
+	int n;
+	while (1) {                   
+		memset(reqbuf,0, MAXREQ);
+		// receive info
+		n = read(consockfd,reqbuf,MAXREQ-1);
+		// printf("Received message: %s\n", reqbuf);
+		if (n <= 0) return;
 
-    char remainder[N+1];remainder[N]='\0';
-    getRemainder(divisor,data,N,dataLen,remainder);
-    // printf("%s\n", remainder);
+		int dataLen=strlen(reqbuf);
+		char* data=(char*)(malloc(sizeof(char)*(dataLen+1)));
+		for(int i=0;i<dataLen;i++)
+		  data[i]=reqbuf[i];
 
-    bool flag=false;  // isError
-    for(int i=0;i<N;i++){
-      if(remainder[i]!='0'){
-        flag=true;break;
-      }
-    }
 
-    if(flag){
-      printf("** Error Detected **\n");
-      
-      memset(reqbuf,0,strlen(reqbuf));
-      char message[]="Error in transmission\n";
-      for(int i=0;i<strlen(message);i++)
-        reqbuf[i]=message[i];
-    }
-    else{
-      printf("** No Error **\n");
+		bool flag=false;  // isError
+		// check for error on every chunk
+		for(int i=0;i<dataLen;i+=chunkLength+N-1){
+			char remainder[N+1];remainder[N]='\0';
+			getRemainder(divisor,data+i,N,chunkLength+N-1,remainder);
 
-      memset(reqbuf,0,strlen(reqbuf));
-      char message[]="Successful transmission\n";
-      for(int i=0;i<strlen(message);i++)
-        reqbuf[i]=message[i];
-    }
+			for(int k=0;k<N;k++){
+		    	if(remainder[k]!='0'){
+		        	flag=true;break;
+		      	}
+		    }
+		}
 
-    
-    write(consockfd, reqbuf, strlen(reqbuf));
+		// inform error or not
+		if(flag){
+		  printf("** Error Detected **\n");
+		  
+		  memset(reqbuf,0,strlen(reqbuf));
+		  char message[]="Error in transmission\n";
+		  for(int i=0;i<strlen(message);i++)
+		    reqbuf[i]=message[i];
+		}
+		else{
+		  printf("** No Error **\n");
 
-    free(data);
-  }
+		  memset(reqbuf,0,strlen(reqbuf));
+		  char message[]="Successful transmission\n";
+		  for(int i=0;i<strlen(message);i++)
+		    reqbuf[i]=message[i];
+		}
+
+		// write to socket
+		write(consockfd, reqbuf, strlen(reqbuf));
+
+		free(data);
+	}
 }
 
 int main() {
 
-int lstnsockfd, consockfd, clilen, portno = 5035;
-struct sockaddr_in serv_addr, cli_addr;
+	int lstnsockfd, consockfd, clilen, portno = 5033;
+	struct sockaddr_in serv_addr, cli_addr;
 
- memset((char *) &serv_addr,0, sizeof(serv_addr));
- serv_addr.sin_family      = AF_INET;
- serv_addr.sin_addr.s_addr = INADDR_ANY;
- serv_addr.sin_port        = htons(portno);
+	memset((char *) &serv_addr,0, sizeof(serv_addr));
+	serv_addr.sin_family      = AF_INET;
+	serv_addr.sin_addr.s_addr = INADDR_ANY;
+	serv_addr.sin_port        = htons(portno);
 
-// Server protocol
-/* Create Socket to receive requests*/
-lstnsockfd = socket(AF_INET, SOCK_STREAM, 0);
+	// create socket
+	lstnsockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-/* Bind socket to port */
-bind(lstnsockfd, (struct sockaddr *)&serv_addr,sizeof(serv_addr));
-printf("Bounded to port\n");
-while (1) {
-   printf("Listening for incoming connections\n");
+	// bind to port
+	bind(lstnsockfd, (struct sockaddr *)&serv_addr,sizeof(serv_addr));
+	printf("Bounded to port\n");
+	while (1) {
+		printf("Listening for incoming connections\n");
 
-/* Listen for incoming connections */
-   listen(lstnsockfd, MAXQUEUE); 
+		//listen incomin client conns
+		listen(lstnsockfd, MAXQUEUE); 
 
-   //clilen = sizeof(cl_addr);
+		clilen = sizeof(cli_addr);
 
-/* Accept incoming connection, obtaining a new socket for it */
-   consockfd = accept(lstnsockfd, (struct sockaddr *) &cli_addr,       
-                      &clilen);
-   printf("Accepted connection\n");
+		// accept conns
+		consockfd = accept(lstnsockfd, (struct sockaddr *) &cli_addr,(socklen_t*)&clilen);
+		printf("Accepted connection\n");
 
-   server(consockfd);
+		server(consockfd);
 
-   close(consockfd);
-  }
-close(lstnsockfd);
+		close(consockfd);
+	}
+	close(lstnsockfd);
+
+	return 0;
 }
