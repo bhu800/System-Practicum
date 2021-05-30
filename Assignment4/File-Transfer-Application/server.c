@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <stdbool.h>
+#include <string.h>
 
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
@@ -51,7 +52,8 @@ void * doNetworking(void * ClientDetail){
 	char data[MAX_CHAR_LEN];
 	char response[MAX_CHAR_LEN];
 
-	while(1){
+	while(1)
+	{
 		bzero(data, MAX_CHAR_LEN);
 		int read = recv(clientSocket, data, MAX_CHAR_LEN, 0);
 
@@ -69,12 +71,16 @@ void * doNetworking(void * ClientDetail){
 			return NULL;
 		}
 
-		printf("read - %d\n", read);
+		printf("DEBUG: read - %d\n", read);
 		data[read] = '\0';
+
+		printf("DATA - %s\n", data);
 
 		char* arg;
 		char* rest = data;
 		arg = strtok_r(rest, " ", &rest);
+
+		printf("arg 1: %s\n", arg);
 
 		if(strcmp(arg, "usage-details") == 0)
 		{
@@ -89,6 +95,8 @@ void * doNetworking(void * ClientDetail){
 		else if(strcmp(arg, "reqFile") == 0)
 		{
 			arg = strtok_r(rest, " ", &rest); // filename
+
+			printf("arg 2: %s\n", arg);
 			
 			bool file_found = false;
 			/*

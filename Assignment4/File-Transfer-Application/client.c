@@ -8,8 +8,33 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
+#include <string.h>
+
+// colors for using in output
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+#define ANSI_COLOR_CYAN    "\x1b[36m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+#define COLOR_RESET  "\033[0m"
 
 #define MAX_CHAR_LEN 1024
+
+void readLine(char* line)
+{
+    if (fgets(line, MAX_CHAR_LEN+1, stdin) == NULL)
+    {
+        if (feof(stdin))
+        {
+            printf(ANSI_COLOR_MAGENTA "Bye!\n" ANSI_COLOR_RESET);
+            exit(0);
+        }
+        printf("command input: Too long input, out of buffer range.");
+        return;
+    }
+}
 
 void clientHandler(int clientSocket)
 {
@@ -17,7 +42,8 @@ void clientHandler(int clientSocket)
 	char data[MAX_CHAR_LEN];
 
 	while(1){
-		scanf("%s", input);
+		readLine(input);
+		input[strlen(input)-1] = '\0';
 		send(clientSocket,input, MAX_CHAR_LEN,0);
 
 		int read = recv(clientSocket, data, MAX_CHAR_LEN, 0);
