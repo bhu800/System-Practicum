@@ -54,13 +54,14 @@ void * doNetworking(void * ClientDetail){
 
 	while(1)
 	{
+		printf("In MAIN LOOP\n");
 		bzero(data, MAX_CHAR_LEN);
 		int read = recv(clientSocket, data, MAX_CHAR_LEN, 0);
 
 		if (read == 0)
 		{
 			sprintf(response, "Bye!");
-			send(clientSocket, response, strlen(response), 0);
+			send(clientSocket, response, MAX_CHAR_LEN, 0);
 
 			close(clientSocket);
 
@@ -88,17 +89,26 @@ void * doNetworking(void * ClientDetail){
 			sprintf(response, "*** Usage Details***\nNumber of files requested : %d\nNumer of files received : %d\nSize of data transferred : %d Bytes\n***********",\
 			clientDetail->usageDetails.numFilesDown, clientDetail->usageDetails.numFilesReq, clientDetail->usageDetails.sizeDataTransferred);
 
-			send(clientSocket, response, strlen(response), 0);
+			send(clientSocket, response, MAX_CHAR_LEN, 0);
 
 		}
 		// reqFile <filename>
 		else if(strcmp(arg, "reqFile") == 0)
 		{
+			// increment number of requested files
+			clientDetail->usageDetails.numFilesReq++;
+
 			arg = strtok_r(rest, " ", &rest); // filename
 
 			printf("arg 2: %s\n", arg);
 			
-			bool file_found = false;
+			bool file_found = true;
+
+			FILE *fp = fopen(arg, "r");
+			if (fp == NULL) 
+			{
+				file_found = false;
+			}
 			/*
 			check here if file is present at the server 
 			*/
@@ -106,7 +116,7 @@ void * doNetworking(void * ClientDetail){
 			{
 				// confirm if the user wants to download the file
 				sprintf(response, "Requested file %s is available. Do you want to downlaod the file? [Y/N] ", arg);
-				send(clientSocket, response, strlen(response), 0);
+				send(clientSocket, response, MAX_CHAR_LEN, 0);
 
 				// read the user's response
 				read = recv(clientSocket, data, MAX_CHAR_LEN, 0);
@@ -117,13 +127,67 @@ void * doNetworking(void * ClientDetail){
 					if (strcmp(data, "Y") || strcmp(data, "y") || strcmp(data, "Yes") || strcmp(data, "yes"))
 					{
 						// sending message to the user
-						sprintf(response, "We are sending the file %s\n", arg);
-						send(clientSocket, response, strlen(response), 0);
+						sprintf(response, "SEND_START");
+						send(clientSocket, response, MAX_CHAR_LEN, 0);
+
+						// ***
+						sprintf(response, "We are sending the file %s", arg);
+						send(clientSocket, response, MAX_CHAR_LEN, 0);
 
 						/*
 						start sending the data 
 						also handle - file transfer succeful and failure
 						*/
+						bool success = true;
+
+						/* while(fgets(response, MAX_CHAR_LEN, fp) != NULL) 
+						{
+							printf("In fgets\n");
+							if (send(clientSocket, response, sizeof(response), 0) == -1) 
+							{
+								perror("Error in sending file");
+								success = false;
+								break;
+							}
+							// increase data sent by sizeof(response)
+							clientDetail->usageDetails.sizeDataTransferred += sizeof(response);
+							bzero(response, MAX_CHAR_LEN);
+						} */
+						while(fread(response, sizeof(char), sizeof(response), fp) > 0) 
+						{
+							printf("In fread\n");
+							if (send(clientSocket, response, sizeof(response), 0) == -1) 
+							{
+								perror("Error in sending file");
+								success = false;
+								break;
+							}
+							// increase data sent by sizeof(response)
+							clientDetail->usageDetails.sizeDataTransferred += sizeof(response);
+							bzero(response, MAX_CHAR_LEN);
+						}
+						if (success)
+						{
+							// increment number of files downloaded by client 
+							clientDetail->usageDetails.numFilesDown++;
+
+							printf("file send complete\n");
+							sprintf(response, "SEND_COMPLETE");
+							send(clientSocket, response, MAX_CHAR_LEN, 0);
+
+							sprintf(response, "File %s successfully sent!", arg);
+							send(clientSocket, response, MAX_CHAR_LEN, 0);    				
+						}
+						else
+						{
+							printf("file send failed\n");
+							sprintf(response, "SEND_FAILED");
+							send(clientSocket, response, MAX_CHAR_LEN, 0);
+
+							sprintf(response, "File %s transfer Failed!", arg);
+							send(clientSocket, response, MAX_CHAR_LEN, 0);
+						}
+
 						break;
 					}
 					else if (strcmp(data, "N") || strcmp(data, "n") || strcmp(data, "No") || strcmp(data, "no"))
@@ -133,7 +197,7 @@ void * doNetworking(void * ClientDetail){
 					else
 					{
 						sprintf(response, "Please choose Y (for yes) or N (for no) ");
-						send(clientSocket, response, strlen(response), 0);
+						send(clientSocket, response, MAX_CHAR_LEN, 0);
 					}
 				}
 			}
@@ -141,13 +205,13 @@ void * doNetworking(void * ClientDetail){
 			{
 				// File not available message
 				sprintf(response, "Sorry the requested file %s is NOT AVAILABLE on the server", arg);
-				send(clientSocket, response, strlen(response), 0);
+				send(clientSocket, response, MAX_CHAR_LEN, 0);
 			}
 		}
 		else if (strcmp(arg, "exit") == 0)
 		{
 			sprintf(response, "Bye!");
-			send(clientSocket, response, strlen(response), 0);
+			send(clientSocket, response, MAX_CHAR_LEN, 0);
 
 			close(clientSocket);
 
@@ -160,12 +224,12 @@ void * doNetworking(void * ClientDetail){
 		else if (strcmp(arg, "help") == 0)
 		{
 			sprintf(response, "COMMANDS : \nusage-details : usage details (list of files client has downloaded so far, size of data transferred etc)\nreqFile <filename> : request file <filename> to be downloaded from the server\nexit : exit the application");
-			send(clientSocket, response, strlen(response), 0);
+			send(clientSocket, response, MAX_CHAR_LEN, 0);
 		}
 		else
 		{
 			sprintf(response, "ERROR: no such command");
-			send(clientSocket, response, strlen(response), 0);
+			send(clientSocket, response, MAX_CHAR_LEN, 0);
 		}
 
 	}

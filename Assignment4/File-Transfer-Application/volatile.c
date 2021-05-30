@@ -40,20 +40,27 @@ void readLine(char* line)
 
 int main()
 {
-    char input[1024];
-    readLine(input);
-    input[strlen(input)-1] = '\0';
-    // scanf("%s", input);
-    // printf("%s\n", input);
-    
+    char input[] = "reqFile Bhumi";
+    char filename[1024];
+
     char* arg;
     char* rest = input;
     arg = strtok_r(rest, " ", &rest);
-    printf("%d\n", strlen(arg));
-    if (strcmp(arg, "help") == 0) printf("Identified !!\n");
+    printf("arg1 : %s\n", arg);
+    if (strcmp(arg, "reqFile") == 0)
+    {
+        arg = strtok_r(rest, " ", &rest);
+        printf("arg2 : %s\n", arg);
+        strcpy(filename, arg);
+    }
 
-    // arg = strtok_r(rest, " ", &rest);
-    // printf("filename - %s\n", arg);
+    printf("%s\n", filename);
+
+    sprintf(input, "hello world");
+    rest = input;
+    arg = strtok_r(rest, " ", &rest);
+
+    printf("%s\n", filename);
 
     return 0;
 }
