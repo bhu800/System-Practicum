@@ -45,7 +45,7 @@ void clientHandler(int clientSocket)
 
 	while(1)
 	{
-		// printf("filename 0 : %s\n", filename);
+		printf("filename 0 : %s\n", filename);
 		readLine(input);
 		input[strlen(input)-1] = '\0';
 		send(clientSocket,input, MAX_CHAR_LEN,0);
@@ -56,45 +56,53 @@ void clientHandler(int clientSocket)
 
 		if (strcmp(arg, "reqFile") == 0)
 		{
-			// printf("hello!!\n");
+			printf("hello!!\n");
 			arg = strtok_r(rest, " ", &rest);
 			filename = strdup(arg);
 		}
-		// printf("filename 1 : %s\n", filename);
+		printf("filename 1 : %s\n", filename);
 
 		read = recv(clientSocket, data, MAX_CHAR_LEN, 0);
 		data[read] = '\0';
 
 		if (strcmp(data, "SEND_START") == 0)
 		{
-			// printf("In send_start\n");
+			printf("In send_start\n");
 			read = recv(clientSocket, data, MAX_CHAR_LEN, 0);
 			data[read] = '\0';
 			printf("%s\n\n", data);
 
 			
 
-			// printf("filename - %s\n", filename);
+			printf("filename - %s\n", filename);
 
 			FILE *fp;
 			// char *filename = arg;
 
 			fp = fopen(filename, "w");
 
-			// if (fp == NULL) 
-			// {
-			// 	printf("ERROR detected!!\n");
-			// }
+			if (fp == NULL) 
+			{
+				printf("ERROR detected!!\n");
+			}
 
 			while (1) 
 			{
+				printf("In fwrite while loop\n");
 				read = recv(clientSocket, data, MAX_CHAR_LEN, 0);
+
 				if (strcmp(data, "SEND_COMPLETE") == 0 || strcmp(data, "SEND_FAILED") == 0)
 				{
 					break;
 				}
-				// fprintf(fp, "%s", data);
-				fwrite(data, sizeof(char), sizeof(data), fp);
+
+				int data_len = atoi(data);
+
+				printf("data_len: %d\n", data_len);
+
+				read = recv(clientSocket, data, MAX_CHAR_LEN, 0);
+
+				fwrite(data, sizeof(char), data_len, fp);
 				bzero(data, MAX_CHAR_LEN);
 			}
 			fclose(fp);
